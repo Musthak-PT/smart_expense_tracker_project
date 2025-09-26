@@ -309,3 +309,75 @@ Design Choices:
         ]
       }
 
+
+Discussion Questions
+  Low Complexity
+  
+  1. Why did you choose a DECIMAL or NUMERIC type for the amount column instead of FLOAT?
+  
+    DECIMAL ensures precise representation of monetary values, avoiding rounding errors that occur with FLOAT.
+    FLOAT uses binary floating-point representation, which can lead to inaccuracies in calculations for financial data.
+    Using DECIMAL guarantees correct totals and aggregates for reports and user expenses.
+  
+  2. What is the purpose of a foreign key constraint?
+  
+  Enforces referential integrity, ensuring that related data exists.
+  
+  Example: An Expense must be linked to a valid User and optionally to a valid Category.
+  
+  Helps prevent orphaned records and maintains database consistency.
+  
+  Medium Complexity
+  
+  3. The current design requires passing a user_id with each request. What are the security drawbacks of this method, and what would be a more robust authentication system to implement?
+  
+  Drawbacks: Users could maliciously pass another user’s ID to access or manipulate their data.
+  
+  Solution: Implement JWT-based authentication. Each request uses a token, and the backend derives the current user from the token (request.user).
+  
+  This removes the need to pass user_id in query params and prevents unauthorized access.
+  
+  4. What are the benefits of handling the report aggregation in the database (with SQL) versus in the backend (with Python)?
+  
+  Efficiency: SQL aggregation uses the database engine, which is optimized for large-scale data operations.
+  
+  Reduced memory usage: Only aggregated results are sent to the backend, rather than all rows.
+  
+  Simpler code: Backend logic stays clean; less custom looping or summing required.
+  
+  Scalability: Handles millions of rows without impacting backend performance.
+  
+  High Complexity
+  
+  5. If the expenses table grew to millions of records, what steps would you take to ensure the monthly summary report remains fast for all users?
+  
+  Add indexes on user_id and date columns to speed up filtering.
+  
+  Use database-level aggregation instead of fetching all rows.
+  
+  Implement caching (Redis or in-memory cache) for frequently requested monthly reports.
+  
+  Partition the table by date or user if dataset grows extremely large.
+  
+  Consider denormalized summary tables updated via triggers or scheduled jobs.
+  
+  6. How would you design a "budgeting" feature where a user can set a monthly spending limit for a specific category (e.g., "$500 for Groceries")? Describe the necessary database changes and API endpoints.
+  
+  Database changes:
+  
+  New model Budget with fields: user (FK), category (FK), month, year, limit_amount.
+  
+  API endpoints:
+  
+  POST /api/budgets → Create a budget for a user/category/month.
+  
+  GET /api/budgets?user_id=<id>&month=MM&year=YYYY → Fetch budget info.
+  
+  Optional: PUT /api/budgets/<id> and DELETE /api/budgets/<id> for update/delete.
+  
+  Logic:
+  
+  On monthly summary, calculate total expenses per category and compare against the budget.
+  
+  Send alerts or warnings if the user exceeds the set limit.
+
